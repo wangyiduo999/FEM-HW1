@@ -440,7 +440,7 @@ double FEM<dim>::analytical_solution_for_problem(double x) {
 template <int dim>
 double FEM<dim>::l2norm_of_error() {
 
-  double l2norm = 0.;
+  double l2norm = 0.0;
 
   //Find the l2 norm of the error between the finite element sol'n and the exact sol'n
   const unsigned int        dofs_per_elem = fe.dofs_per_cell; //This gives you dofs per element
