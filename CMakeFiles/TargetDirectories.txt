@@ -1,0 +1,8 @@
+/mnt/hw1/CA1_template/CMakeFiles/debug.dir
+/mnt/hw1/CA1_template/CMakeFiles/distclean.dir
+/mnt/hw1/CA1_template/CMakeFiles/info.dir
+/mnt/hw1/CA1_template/CMakeFiles/main1.dir
+/mnt/hw1/CA1_template/CMakeFiles/release.dir
+/mnt/hw1/CA1_template/CMakeFiles/run.dir
+/mnt/hw1/CA1_template/CMakeFiles/runclean.dir
+/mnt/hw1/CA1_template/CMakeFiles/strip_comments.dir
