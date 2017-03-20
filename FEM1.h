@@ -160,8 +160,6 @@ double FEM<dim>::basis_function(unsigned int node, double xi) {
   double xi_a_node = xi_at_node(node);
 
   for (int i = 0; i < node_numbers; i++) {
-    if (node == i)
-      continue;
     xi_b_nodes.push_back(xi_at_node(i));
   }
 
@@ -170,15 +168,15 @@ double FEM<dim>::basis_function(unsigned int node, double xi) {
 
   for (int i = 0; i < node_numbers; i++) {
     if (i != node) {
-      nominator *= (xi - xi_a_node);
+      nominator *= (xi - xi_b_nodes[i]);
       denominator *= (xi_a_node - xi_b_nodes[i]);
     }
   }
 
-  cout << "nominator = " << nominator << endl;
-  cout << "denominator = " << denominator << endl;
+  //cout << "nominator = " << nominator << endl;
+ // cout << "denominator = " << denominator << endl;
   double value = nominator / denominator; //Store the value of the basis function in this variable
-
+ // printf("node = %d, xi = %lf, value = %lf\n", node, xi, value);
 
   /*You can use the function "xi_at_node" (defined above) to get the value of xi (in the bi-unit domain)
     at any node in the element - using deal.II's element node numbering pattern.*/
@@ -196,7 +194,8 @@ double FEM<dim>::basis_gradient(unsigned int node, double xi) {
     "xi" is the point (in the bi-unit domain) where the function is being evaluated.
     You need to calculate the value of the derivative of the specified basis function and order at the given quadrature pt.
     Note that this is the derivative with respect to xi (not x)*/
-  double delta_xi = FLT_MIN * 10;
+  //double delta_xi = FLT_MIN * 1000000;
+  static const double delta_xi = 0.000001;
 
   double derivative = (basis_function(node, xi + delta_xi) - basis_function(node, xi)) / delta_xi;
 
@@ -367,6 +366,8 @@ void FEM<dim>::assemble_system() {
         for (unsigned int q = 0; q < quadRule; q++) {
           //EDIT - Define Klocal.
           Klocal[A][B] += 2 * E * (basis_gradient(A, quad_points[q]) * (basis_gradient(B, quad_points[q]) * quad_weight[q])) / h_e;
+//          cout << "A" <<"B" <<"Klocal"Klocal[A][B] <<endl;
+   //       printf("Klocal[%d][%d] = %lf\n", A, B, Klocal[A][B]);
         }
       }
     }
@@ -473,6 +474,6 @@ double FEM<dim>::l2norm_of_error() {
 
     }
   }
-
+  cout << "l2norm: " <<sqrt(l2norm) <<endl;
   return sqrt(l2norm);
 }
