@@ -174,9 +174,9 @@ double FEM<dim>::basis_function(unsigned int node, double xi) {
   }
 
   //cout << "nominator = " << nominator << endl;
- // cout << "denominator = " << denominator << endl;
+// cout << "denominator = " << denominator << endl;
   double value = nominator / denominator; //Store the value of the basis function in this variable
- // printf("node = %d, xi = %lf, value = %lf\n", node, xi, value);
+// printf("node = %d, xi = %lf, value = %lf\n", node, xi, value);
 
   /*You can use the function "xi_at_node" (defined above) to get the value of xi (in the bi-unit domain)
     at any node in the element - using deal.II's element node numbering pattern.*/
@@ -199,7 +199,7 @@ double FEM<dim>::basis_gradient(unsigned int node, double xi) {
 
   double derivative = (basis_function(node, xi + delta_xi) - basis_function(node, xi)) / delta_xi;
 
-  cout << "derivative at node:" << node << " xi: " << xi << " value: " << derivative << endl;
+  //cout << "derivative at node:" << node << " xi: " << xi << " value: " << derivative << endl;
   double value = derivative; //Store the value of the gradient of the basis function in this variable
 
   /*You can use the function "xi_at_node" (defined above) to get the value of xi (in the bi-unit domain)
@@ -313,11 +313,15 @@ void FEM<dim>::assemble_system() {
   std::vector<unsigned int> local_dof_indices (dofs_per_elem);
   double                    h_e, x, f;
 
-  f = pow(10, 11);
-  E = pow(10, 11);
+  // f = pow(10, 11);
+  // E = pow(10, 11);
+  f = 1.0;
+  E = 1.0;
   Area = pow(10, -4);
   h2 = pow(10, 6);
+  double out_h_e;
 
+  cout <<"Area" << Area <<endl;
   //loop over elements
   typename DoFHandler<dim>::active_cell_iterator elem = dof_handler.begin_active(),
                                                  endc = dof_handler.end();
@@ -333,7 +337,9 @@ void FEM<dim>::assemble_system() {
       by the global node number. "local_dof_indices" gives us the global node number indexed by
       the element node number.*/
     h_e = nodeLocation[local_dof_indices[1]] - nodeLocation[local_dof_indices[0]];
-
+    //h_e = h_e/10;
+    out_h_e =h_e;
+    //cout <<"h_e:" << h_e <<endl;
     //Loop over local DOFs and quadrature points to populate Flocal and Klocal.
     Flocal = 0.;
     for (unsigned int A = 0; A < dofs_per_elem; A++) {
@@ -346,6 +352,7 @@ void FEM<dim>::assemble_system() {
         //EDIT - Define Flocal.
         Flocal[A] += h_e * f * basis_function(A, quad_points[q]) * quad_weight[q] / 2;
       }
+     // printf("Flocal[%d] = %lf\n", A, 2*Flocal[A]/(f*h_e));
     }
     //Add nonzero Neumann condition, if applicable
     if (prob == 2) {
@@ -365,10 +372,12 @@ void FEM<dim>::assemble_system() {
       for (unsigned int B = 0; B < dofs_per_elem; B++) {
         for (unsigned int q = 0; q < quadRule; q++) {
           //EDIT - Define Klocal.
-          Klocal[A][B] += 2 * E * (basis_gradient(A, quad_points[q]) * (basis_gradient(B, quad_points[q]) * quad_weight[q])) / h_e;
+          Klocal[A][B] +=  (E / h_e )* (2* basis_gradient(A, quad_points[q]) *
+                                   (basis_gradient(B, quad_points[q]) * quad_weight[q])) ;
 //          cout << "A" <<"B" <<"Klocal"Klocal[A][B] <<endl;
-   //       printf("Klocal[%d][%d] = %lf\n", A, B, Klocal[A][B]);
+
         }
+         //printf("Klocal[%d][%d] = %lf\n", A, B, Klocal[A][B]);
       }
     }
 
@@ -380,6 +389,7 @@ void FEM<dim>::assemble_system() {
       corresponding to element node number A*/
       unsigned int A_global = local_dof_indices[A];
       F[A_global] += Flocal[A];
+      //printf("Global[%d] = %lf\n", A_global, 2*F[A_global]/(f*h_e));
       for (unsigned int B = 0; B < dofs_per_elem; B++) {
         //EDIT - add component A,B of Klocal to the correct location in K (using local_dof_indices)
         /*Note: K is a sparse matrix, so you need to use the function "add".
@@ -387,10 +397,22 @@ void FEM<dim>::assemble_system() {
           K.add(i,j,C);*/
         unsigned int B_global = local_dof_indices[B];
         K.add(A_global, B_global, Klocal[A][B]);
+        // printf("Kglobal[%d][%d] = %lf\n", A_global, B_global, Klocal[A][B]*h_e/E);
       }
     }
 
   }
+
+    for (int i = 0; i < F.size(); i++) {
+     // printf("Fglobal[%d] = %lf\n", i, 2*F[i]/(f*out_h_e));
+      printf("Fglobal[%d] = %lf\n", i, F[i]);
+    }
+
+    for (int i = 0; i < F.size(); i++) {
+      for (int j = 0; j < F.size(); j++)
+      printf("K[%d][%d] = %lf\n", i, j, K.el(i,j));
+    //printf("K[%d][%d] = %lf\n", i, j, K.el(i,j)*out_h_e/E);
+    }
 
   //Apply Dirichlet boundary conditions
   /*deal.II applies Dirichlet boundary conditions (using the boundary_values map we
@@ -442,12 +464,23 @@ double FEM<dim>::l2norm_of_error() {
 
   double l2norm = 0.0;
 
+  double xi_end = analytical_solution_for_problem(L);
+  double xi_begin = analytical_solution_for_problem(0);
+  cout << "analytical_solution_for_problem : " << xi_begin << endl;
+  cout << "analytical_solution_for_problem : " << xi_end << endl;
   //Find the l2 norm of the error between the finite element sol'n and the exact sol'n
   const unsigned int        dofs_per_elem = fe.dofs_per_cell; //This gives you dofs per element
   std::vector<unsigned int> local_dof_indices (dofs_per_elem);
   double u_exact, u_h, x, h_e;
 
   //loop over elements
+
+  for (int i = 0; i < D.size(); i++) {
+    printf("D[%d] = %lf\n", i, D[i]);
+  }
+  cout << "numberical : " << D[0] << endl;
+  cout << "numberical : " << D[D.size()-1] << endl;
+
   typename DoFHandler<dim>::active_cell_iterator elem = dof_handler.begin_active (),
                                                  endc = dof_handler.end();
   for (; elem != endc; ++elem) {
@@ -469,11 +502,13 @@ double FEM<dim>::l2norm_of_error() {
       /*This includes evaluating the exact solution at the quadrature points*/
       u_exact = analytical_solution_for_problem(x);
 
-      l2norm += (u_exact - u_h) * (u_exact - u_h) * h_e / 2;
+      printf("x = %lf, u_exact = %lf, u_h = %lf\n", x, u_exact, u_h);
+
+      l2norm += (u_exact - u_h) * (u_exact - u_h) * h_e *quad_weight[q]/ 2;
 
 
     }
   }
-  cout << "l2norm: " <<sqrt(l2norm) <<endl;
+  cout << "l2norm: " << sqrt(l2norm) << endl;
   return sqrt(l2norm);
 }
