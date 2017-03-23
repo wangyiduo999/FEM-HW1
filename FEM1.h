@@ -350,7 +350,7 @@ void FEM<dim>::assemble_system() {
           x += nodeLocation[local_dof_indices[B]] * basis_function(B, quad_points[q]);
         }
         //EDIT - Define Flocal.
-        Flocal[A] += h_e * f * basis_function(A, quad_points[q]) * quad_weight[q] / 2;
+        Flocal[A] += h_e * f * x * basis_function(A, quad_points[q]) * quad_weight[q] / 2;
       }
      // printf("Flocal[%d] = %lf\n", A, 2*Flocal[A]/(f*h_e));
     }
@@ -375,7 +375,6 @@ void FEM<dim>::assemble_system() {
           Klocal[A][B] +=  (E / h_e )* (2* basis_gradient(A, quad_points[q]) *
                                    (basis_gradient(B, quad_points[q]) * quad_weight[q])) ;
 //          cout << "A" <<"B" <<"Klocal"Klocal[A][B] <<endl;
-
         }
          //printf("Klocal[%d][%d] = %lf\n", A, B, Klocal[A][B]);
       }
@@ -451,7 +450,7 @@ void FEM<dim>::output_results () {
 template <int dim>
 double FEM<dim>::analytical_solution_for_problem(double x) {
   if (prob == 1) {
-    return (-1) * x * x * f / (2 * E * Area) + ((g2 - g1) / L + f * L / (2 * E * Area)) * x + g1;
+    return (-1) * x * x * x *f / (6 * E) + ((g2 - g1) / L + f * L *L/ (6 * E )) * x + g1;
   } else {
     return (-1) * x * x * f / (2 * E * Area) + (f * L + h2) * x / (E * Area) + g1;
   }
