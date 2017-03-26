@@ -165,21 +165,20 @@ double FEM<dim>::basis_function(unsigned int node, double xi) {
 
   double nominator = 1;
   double denominator = 1;
-  cout << xi_a_node <<endl;
+// cout << xi_a_node << endl;
   for (int i = 0; i < node_numbers; i++) {
-    cout << xi_b_nodes[i] <<endl;
+    // cout << xi_b_nodes[i] << endl;
     if (i != node) {
       nominator *= (xi - xi_b_nodes[i]);
       denominator *= (xi_a_node - xi_b_nodes[i]);
     }
   }
 
-  getchar();
 
-  cout << "nominator = " << nominator << endl;
-cout << "denominator = " << denominator << endl;
+  // cout << "nominator = " << nominator << endl;
+  // cout << "denominator = " << denominator << endl;
   double value = nominator / denominator; //Store the value of the basis function in this variable
-printf("node = %d, xi = %lf, value = %lf\n", node, xi, value);
+  // printf("node = %d, xi = %lf, value = %lf\n", node, xi, value);
 
   /*You can use the function "xi_at_node" (defined above) to get the value of xi (in the bi-unit domain)
     at any node in the element - using deal.II's element node numbering pattern.*/
@@ -338,11 +337,19 @@ void FEM<dim>::assemble_system() {
       by the global node number. "local_dof_indices" gives us the global node number indexed by
       the element node number.*/
     h_e = nodeLocation[local_dof_indices[1]] - nodeLocation[local_dof_indices[0]];
-    //h_e = h_e/10;
-    //out_h_e =h_e;
-    //cout <<"h_e:" << h_e <<endl;
     //Loop over local DOFs and quadrature points to populate Flocal and Klocal.
     Flocal = 0.;
+    // double q = -0.82323536;
+    // double sum = 0;
+    // for (unsigned int A = 0; A < dofs_per_elem; A++) {
+    //   sum += basis_function(A, q);
+    // }
+
+    // cout << "q: " << q << "sum: " << sum << endl;
+
+
+
+    // getchar();
     for (unsigned int A = 0; A < dofs_per_elem; A++) {
       for (unsigned int q = 0; q < quadRule; q++) {
         x = 0;
@@ -353,7 +360,7 @@ void FEM<dim>::assemble_system() {
         //EDIT - Define Flocal.
         Flocal[A] += Area * h_e * (body_f * x) * basis_function(A, quad_points[q]) * quad_weight[q] / 2;
       }
-       // printf("Flocal[%d] = %.10f\n", A, Flocal[A]);
+      // printf("Flocal[%d] = %.10f\n", A, Flocal[A]);
     }
     //Add nonzero Neumann condition, if applicable
     if (prob == 2) {
@@ -462,7 +469,7 @@ double FEM<dim>::analytical_solution_for_problem(double x) {
     // cout << "anyltical result123 = " << result <<endl;
     return (-1.0) * x * x * x * body_f / (6.0 * E) + x * ((g2 - g1) / L + body_f * L * L / (6.0 * E )) + g1;
   } else {
-    return (-1.0) * x * x * x * body_f / (6.0 * E) + x * (( 0.5*L*L*body_f*Area+ h2)/(E*Area)) + g1;
+    return (-1.0) * x * x * x * body_f / (6.0 * E) + x * (( 0.5 * L * L * body_f * Area + h2) / (E * Area)) + g1;
   }
 
 
@@ -484,10 +491,10 @@ double FEM<dim>::l2norm_of_error() {
 
   //loop over elements
 
- //  for (int i = 0; i < D.size(); i++) {
- // //   printf("D[%d] = %.10f anyltical[%lf] = %.10f, difference = %.20f\n", i, (float)D[i], i * 0.01, (float)analytical_solution_for_problem(i * 0.01), (D[i] - analytical_solution_for_problem(i * 0.01)) );
- //    cout << (D[i] - analytical_solution_for_problem(i * 0.01)) << endl;
- //  }
+//  for (int i = 0; i < D.size(); i++) {
+// //   printf("D[%d] = %.10f anyltical[%lf] = %.10f, difference = %.20f\n", i, (float)D[i], i * 0.01, (float)analytical_solution_for_problem(i * 0.01), (D[i] - analytical_solution_for_problem(i * 0.01)) );
+//    cout << (D[i] - analytical_solution_for_problem(i * 0.01)) << endl;
+//  }
 //  cout << "numberical : " << D[0] << endl;
 // cout << "numberical : " << D[D.size()-1] << endl;
 
@@ -519,7 +526,7 @@ double FEM<dim>::l2norm_of_error() {
       /*This includes evaluating the exact solution at the quadrature points*/
       u_exact = analytical_solution_for_problem(x);
 
-   //   printf("x = %lf, u_exact = %lf, u_h = %lf\n", x, u_exact, u_h);
+      //   printf("x = %lf, u_exact = %lf, u_h = %lf\n", x, u_exact, u_h);
 
       l2norm += (u_exact - u_h) * (u_exact - u_h) * h_e * quad_weight[q] / 2;
 
