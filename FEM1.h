@@ -163,22 +163,31 @@ double FEM<dim>::basis_function(unsigned int node, double xi) {
     xi_b_nodes.push_back(xi_at_node(i));
   }
 
-  double nominator = 1;
-  double denominator = 1;
-// cout << xi_a_node << endl;
+  // double nominator = 1.;
+  // double denominator = 1.;
+  // cout << xi_a_node <<endl;
+  int count = 0;
+  double value = 1.0;
   for (int i = 0; i < node_numbers; i++) {
-    // cout << xi_b_nodes[i] << endl;
+    // cout << xi_b_nodes[i] <<endl;
     if (i != node) {
-      nominator *= (xi - xi_b_nodes[i]);
-      denominator *= (xi_a_node - xi_b_nodes[i]);
+      // nominator *= (xi - xi_b_nodes[i]);
+      // denominator *= (xi_a_node - xi_b_nodes[i]);
+      value *= (xi - xi_b_nodes[i]) / (xi_a_node - xi_b_nodes[i]);
+      count++;
     }
   }
 
+  if (count != node_numbers - 1) {
+    cout << "error" << endl;
+    assert("error");
+  }
+  // getchar();
 
   // cout << "nominator = " << nominator << endl;
-  // cout << "denominator = " << denominator << endl;
-  double value = nominator / denominator; //Store the value of the basis function in this variable
-  // printf("node = %d, xi = %lf, value = %lf\n", node, xi, value);
+// cout << "denominator = " << denominator << endl;
+//  double value = nominator / denominator; //Store the value of the basis function in this variable
+// printf("node = %d, xi = %lf, value = %lf\n", node, xi, value);
 
   /*You can use the function "xi_at_node" (defined above) to get the value of xi (in the bi-unit domain)
     at any node in the element - using deal.II's element node numbering pattern.*/
@@ -197,13 +206,37 @@ double FEM<dim>::basis_gradient(unsigned int node, double xi) {
     You need to calculate the value of the derivative of the specified basis function and order at the given quadrature pt.
     Note that this is the derivative with respect to xi (not x)*/
   //double delta_xi = FLT_MIN * 1000000;
-  static const double delta_xi = 0.000001;
-
+  static const double delta_xi = 0.1e-8;
+// static const double delta_xi = 0.0000000000001;
   double derivative = (basis_function(node, xi + delta_xi) - basis_function(node, xi)) / delta_xi;
+  double derivative_check = (-1.0) * (basis_function(node, xi - delta_xi) - basis_function(node, xi)) / delta_xi;
+  double diff = derivative - derivative_check;
+  // if (derivative != -derivative_check) {
+  //   cout << "derivative error" << endl;
+  //   printf("derivative = %.20f\n", derivative);
+  //   printf("diff == %.20f\n", diff);
+  //  // getchar();
+  //   //return 0.0;
+  // }
+
+  if (basisFunctionOrder == 1) {
+    if (node == 0)
+      return 0.5;
+    else if (node == 1)
+      return -0.5;
+  } else if (basisFunctionOrder == 2) {
+    if (node == 0)
+      return -0.5 + xi;
+    else if (node == 1)
+      return 0.5 + xi;
+    else
+      return -2.0 * xi;
+  }
+
 
   //cout << "derivative at node:" << node << " xi: " << xi << " value: " << derivative << endl;
-  double value = derivative; //Store the value of the gradient of the basis function in this variable
-
+  //double value = derivative; //Store the value of the gradient of the basis function in this variable
+  double value = derivative;
   /*You can use the function "xi_at_node" (defined above) to get the value of xi (in the bi-unit domain)
     at any node in the element - using deal.II's element node numbering pattern.*/
 
@@ -241,7 +274,6 @@ void FEM<dim>::define_boundary_conds() {
     and the applied displacement value in the std::map "boundary_values". Deal.II
     will use this information later to apply Dirichlet boundary conditions.
     Neumann boundary conditions are applied when constructing Flocal in "assembly"*/
-
   for (unsigned int globalNode = 0; globalNode < totalNodes; globalNode++) {
     if (nodeLocation[globalNode] == 0) {
       boundary_values[globalNode] = g1;
@@ -289,6 +321,7 @@ void FEM<dim>::setup_system() {
   //Define quadrature rule
   /*A quad rule of 2 is included here as an example. You will need to decide
     what quadrature rule is needed for the given problems*/
+#if 1
   quadRule = 2; //EDIT - Number of quadrature points along one dimension
   quad_points.resize(quadRule); quad_weight.resize(quadRule);
 
@@ -297,6 +330,40 @@ void FEM<dim>::setup_system() {
 
   quad_weight[0] = 1.; //EDIT
   quad_weight[1] = 1.; //EDIT
+#endif
+#if 0
+  quadRule = 3; //EDIT - Number of quadrature points along one dimension
+  quad_points.resize(quadRule); quad_weight.resize(quadRule);
+
+  quad_points[0] = -sqrt(3.0 / 5.0); //EDIT
+  quad_points[1] = 0; //EDIT
+  quad_points[2] = sqrt(3.0 / 5.0);
+
+  quad_weight[0] = 5.0 / 9.0; //EDIT
+  quad_weight[1] = 8.0 / 9.0; //EDIT
+  quad_weight[2] = 5.0 / 9.0; //EDIT
+
+#endif
+
+#if 0
+  quadRule = 4; //EDIT - Number of quadrature points along one dimension
+  quad_points.resize(quadRule); quad_weight.resize(quadRule);
+
+  quad_points[0] = -sqrt(525.0 + 70.0 * sqrt(30.0)) / 35.0; //EDIT
+  quad_points[1] = -sqrt(525.0 - 70.0 * sqrt(30.0)) / 35.0; //EDIT
+  quad_points[2] = sqrt(525.0 - 70.0 * sqrt(30.0)) / 35.0;
+  quad_points[3] = sqrt(525.0 + 70.0 * sqrt(30.0)) / 35.0;
+
+  quad_weight[0] = (18.0 - sqrt(30.0)) / 36; //EDIT
+  quad_weight[1] = (18.0 + sqrt(30.0)) / 36; //EDIT
+  quad_weight[2] = (18.0 + sqrt(30.0)) / 36;
+  quad_weight[3] = (18.0 - sqrt(30.0)) / 36;
+
+#endif
+
+  for (int i = 0; i < quad_points.size(); i++) {
+    printf( "quad_points[%d] = %.10f, quad_weight[%d] = %.10f\n", i, quad_points[i], i, quad_weight[i]);
+  }
 
   //Just some notes...
   std::cout << "   Number of active elems:       " << triangulation.n_active_cells() << std::endl;
@@ -313,9 +380,12 @@ void FEM<dim>::assemble_system() {
   FullMatrix<double>        Klocal (dofs_per_elem, dofs_per_elem);
   Vector<double>            Flocal (dofs_per_elem);
   std::vector<unsigned int> local_dof_indices (dofs_per_elem);
-  double                    h_e, x;
+  double                    h_e, x, f;
+
+
 
   body_f = pow(10, 11);
+  f = body_f;
   E = pow(10, 11);
   Area = pow(10, -4);
   h2 = pow(10, 6);
@@ -337,19 +407,11 @@ void FEM<dim>::assemble_system() {
       by the global node number. "local_dof_indices" gives us the global node number indexed by
       the element node number.*/
     h_e = nodeLocation[local_dof_indices[1]] - nodeLocation[local_dof_indices[0]];
+    //h_e = h_e/10;
+    //out_h_e =h_e;
+    // cout << "h_e:" << h_e << endl;
     //Loop over local DOFs and quadrature points to populate Flocal and Klocal.
     Flocal = 0.;
-    // double q = -0.82323536;
-    // double sum = 0;
-    // for (unsigned int A = 0; A < dofs_per_elem; A++) {
-    //   sum += basis_function(A, q);
-    // }
-
-    // cout << "q: " << q << "sum: " << sum << endl;
-
-
-
-    // getchar();
     for (unsigned int A = 0; A < dofs_per_elem; A++) {
       for (unsigned int q = 0; q < quadRule; q++) {
         x = 0;
@@ -385,7 +447,7 @@ void FEM<dim>::assemble_system() {
                                                 (basis_gradient(B, quad_points[q]) * quad_weight[q])) ;
 //          cout << "A" <<"B" <<"Klocal"Klocal[A][B] <<endl;
         }
-        //printf("Klocal[%d][%d] = %lf\n", A, B, Klocal[A][B]);
+        // printf("Klocal[%d][%d] = %lf\n", A, B, Klocal[A][B]);
       }
     }
 
@@ -405,7 +467,7 @@ void FEM<dim>::assemble_system() {
           K.add(i,j,C);*/
         unsigned int B_global = local_dof_indices[B];
         K.add(A_global, B_global, Klocal[A][B]);
-        // printf("Kglobal[%d][%d] = %lf\n", A_global, B_global, Klocal[A][B]*h_e/E);
+        //    printf("Kglobal[%d][%d] = %lf\n", A_global, B_global, Klocal[A][B]*h_e / (E * Area * 2));
       }
     }
 
@@ -526,7 +588,7 @@ double FEM<dim>::l2norm_of_error() {
       /*This includes evaluating the exact solution at the quadrature points*/
       u_exact = analytical_solution_for_problem(x);
 
-      //   printf("x = %lf, u_exact = %lf, u_h = %lf\n", x, u_exact, u_h);
+      printf("x = %.16f, u_exact = %.16f, u_h = %.16f, diff = %.16f\n", x, u_exact, u_h, u_exact - u_h);
 
       l2norm += (u_exact - u_h) * (u_exact - u_h) * h_e * quad_weight[q] / 2;
 
