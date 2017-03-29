@@ -155,6 +155,13 @@ double FEM<dim>::basis_function(unsigned int node, double xi) {
     "node" specifies which node the basis function corresponds to,
     "xi" is the point (in the bi-unit domain) where the function is being evaluated.
     You need to calculate the value of the specified basis function and order at the given quadrature pt.*/
+
+  // if (!(node >= 0 && node <= basisFunctionOrder && xi >= -1 && xi <= 1)) {
+  //   cout << "node: " << node <<endl;
+  //   cout << "xi:" <<xi <<endl;
+
+  // }
+  // assert(node >= 0 && node <= basisFunctionOrder && xi >= -1 && xi <= 1);
   int node_numbers = basisFunctionOrder + 1;
   std::vector<double> xi_b_nodes;
   double xi_a_node = xi_at_node(node);
@@ -206,11 +213,11 @@ double FEM<dim>::basis_gradient(unsigned int node, double xi) {
     You need to calculate the value of the derivative of the specified basis function and order at the given quadrature pt.
     Note that this is the derivative with respect to xi (not x)*/
   //double delta_xi = FLT_MIN * 1000000;
-  static const double delta_xi = 0.1e-8;
+  static const double delta_xi = 1.0e-7;
 // static const double delta_xi = 0.0000000000001;
   double derivative = (basis_function(node, xi + delta_xi) - basis_function(node, xi)) / delta_xi;
-  double derivative_check = (-1.0) * (basis_function(node, xi - delta_xi) - basis_function(node, xi)) / delta_xi;
-  double diff = derivative - derivative_check;
+  // double derivative_check = (-1.0) * (basis_function(node, xi - delta_xi) - basis_function(node, xi)) / delta_xi;
+  // double diff = derivative - derivative_check;
   // if (derivative != -derivative_check) {
   //   cout << "derivative error" << endl;
   //   printf("derivative = %.20f\n", derivative);
@@ -231,10 +238,21 @@ double FEM<dim>::basis_gradient(unsigned int node, double xi) {
       return 0.5 + xi;
     else
       return -2.0 * xi;
+  } else if (basisFunctionOrder == 3) {
+    switch (node) {
+    case 0:
+      return (-27.0 * xi * xi) / (16.0) + 9.0 * xi / 8.0 + 1.0 / 16.0;
+    case 2:
+      return (81.0 * xi * xi) / (16.0) - 9.0 * xi / 8.0 - 27.0 / 16.0;
+    case 3:
+      return -(81.0 * xi * xi) / (16.0) - 9.0 * xi / 8.0 + 27.0 / 16.0;
+    case 1:
+      return (27.0 * xi * xi) / (16.0) + 9.0 * xi / 8.0 - 1.0 / 16.0;
+    }
   }
 
 
-  //cout << "derivative at node:" << node << " xi: " << xi << " value: " << derivative << endl;
+// cout << setprecision(10) <<"derivative at node:" << node << " xi: " << xi << " value: " << derivative << endl;
   //double value = derivative; //Store the value of the gradient of the basis function in this variable
   double value = derivative;
   /*You can use the function "xi_at_node" (defined above) to get the value of xi (in the bi-unit domain)
@@ -321,51 +339,126 @@ void FEM<dim>::setup_system() {
   //Define quadrature rule
   /*A quad rule of 2 is included here as an example. You will need to decide
     what quadrature rule is needed for the given problems*/
-#if 1
-  quadRule = 2; //EDIT - Number of quadrature points along one dimension
-  quad_points.resize(quadRule); quad_weight.resize(quadRule);
 
-  quad_points[0] = -sqrt(1. / 3.); //EDIT
-  quad_points[1] = sqrt(1. / 3.); //EDIT
+  if (basisFunctionOrder == 0) {
+    quadRule = 2; //EDIT - Number of quadrature points along one dimension
+    quad_points.resize(quadRule); quad_weight.resize(quadRule);
 
-  quad_weight[0] = 1.; //EDIT
-  quad_weight[1] = 1.; //EDIT
-#endif
-#if 0
-  quadRule = 3; //EDIT - Number of quadrature points along one dimension
-  quad_points.resize(quadRule); quad_weight.resize(quadRule);
+    quad_points[0] = -sqrt(1. / 3.); //EDIT
+    quad_points[1] = sqrt(1. / 3.); //EDIT
 
-  quad_points[0] = -sqrt(3.0 / 5.0); //EDIT
-  quad_points[1] = 0; //EDIT
-  quad_points[2] = sqrt(3.0 / 5.0);
+    quad_weight[0] = 1.; //EDIT
+    quad_weight[1] = 1.; //EDIT
+  } else if ( basisFunctionOrder == 1) {
+    quadRule = 3; //EDIT - Number of quadrature points along one dimension
+    quad_points.resize(quadRule); quad_weight.resize(quadRule);
 
-  quad_weight[0] = 5.0 / 9.0; //EDIT
-  quad_weight[1] = 8.0 / 9.0; //EDIT
-  quad_weight[2] = 5.0 / 9.0; //EDIT
+    quad_points[0] = -sqrt(3.0 / 5.0); //EDIT
+    quad_points[1] = 0; //EDIT
+    quad_points[2] = sqrt(3.0 / 5.0);
 
-#endif
+    quad_weight[0] = 5.0 / 9.0; //EDIT
+    quad_weight[1] = 8.0 / 9.0; //EDIT
+    quad_weight[2] = 5.0 / 9.0; //EDIT
 
-#if 0
-  quadRule = 4; //EDIT - Number of quadrature points along one dimension
-  quad_points.resize(quadRule); quad_weight.resize(quadRule);
 
-  quad_points[0] = -sqrt(525.0 + 70.0 * sqrt(30.0)) / 35.0; //EDIT
-  quad_points[1] = -sqrt(525.0 - 70.0 * sqrt(30.0)) / 35.0; //EDIT
-  quad_points[2] = sqrt(525.0 - 70.0 * sqrt(30.0)) / 35.0;
-  quad_points[3] = sqrt(525.0 + 70.0 * sqrt(30.0)) / 35.0;
+  } else if (basisFunctionOrder == 2 ) {
+    // cout << "basis function order == 3" <<endl;
+    quadRule = 4; //EDIT - Number of quadrature points along one dimension
+    quad_points.resize(quadRule); quad_weight.resize(quadRule);
 
-  quad_weight[0] = (18.0 - sqrt(30.0)) / 36; //EDIT
-  quad_weight[1] = (18.0 + sqrt(30.0)) / 36; //EDIT
-  quad_weight[2] = (18.0 + sqrt(30.0)) / 36;
-  quad_weight[3] = (18.0 - sqrt(30.0)) / 36;
+    quad_points[0] = -sqrt(3.0 / 7.0 + (2.0 / 7.0) * sqrt(6.0 / 5.0)); //EDIT
+    quad_points[1] = -sqrt(3.0 / 7.0 - (2.0 / 7.0) * sqrt(6.0 / 5.0)); //EDIT
+    quad_points[2] = sqrt(3.0 / 7.0 - (2.0 / 7.0) * sqrt(6.0 / 5.0));
+    quad_points[3] = sqrt(3.0 / 7.0 + (2.0 / 7.0) * sqrt(6.0 / 5.0));
 
-#endif
+    quad_weight[0] = (18.0 - sqrt(30.0)) / 36.0; //EDIT
+    quad_weight[1] = (18.0 + sqrt(30.0)) / 36.0; //EDIT
+    quad_weight[2] = (18.0 + sqrt(30.0)) / 36.0;
+    quad_weight[3] = (18.0 - sqrt(30.0)) / 36.0;
+  } else if (false) {
+    quadRule = 5; //EDIT - Number of quadrature points along one dimension
+    quad_points.resize(quadRule); quad_weight.resize(quadRule);
 
-  for (int i = 0; i < quad_points.size(); i++) {
-    printf( "quad_points[%d] = %.10f, quad_weight[%d] = %.10f\n", i, quad_points[i], i, quad_weight[i]);
+    quad_points[0] = 0.0;
+    quad_points[1] = -(1.0 / 3.0) * sqrt(5.0 - 2.0 * sqrt(10.0 / 7.0)); //EDIT
+    quad_points[2] = +(1.0 / 3.0) * sqrt(5.0 - 2.0 * sqrt(10.0 / 7.0));
+    quad_points[3] = -(1.0 / 3.0) * sqrt(5.0 + 2.0 * sqrt(10.0 / 7.0));
+    quad_points[4] = +(1.0 / 3.0) * sqrt(5.0 + 2.0 * sqrt(10.0 / 7.0));
+
+    quad_weight[0] = 128.0 / 225.0;
+    quad_weight[1] = (322.0 + 13.0 * sqrt(70.0)) / 900.0; //EDIT
+    quad_weight[2] = (322.0 + 13.0 * sqrt(70.0)) / 900.0; //EDIT
+    quad_weight[3] = (322.0 - 13.0 * sqrt(70.0)) / 900.0;
+    quad_weight[4] = (322.0 - 13.0 * sqrt(70.0)) / 900.0;
+  } else if (false) {
+    quadRule = 7; //EDIT - Number of quadrature points along one dimension
+    quad_points.resize(quadRule); quad_weight.resize(quadRule);
+
+    quad_points[0] = 0.0;
+    quad_points[1] = -sqrt(5.0 / 11.0 - (2.0 / 11.0) * sqrt(5.0 / 3.0)); //EDIT
+    quad_points[2] = +sqrt(5.0 / 11.0 - (2.0 / 11.0) * sqrt(5.0 / 3.0));
+    quad_points[3] = -sqrt(5.0 / 11.0 + (2.0 / 11.0) * sqrt(5.0 / 3.0));
+    quad_points[4] = +sqrt(5.0 / 11.0 + (2.0 / 11.0) * sqrt(5.0 / 3.0));
+    quad_points[5] = 1.0;
+    quad_points[6] = -1.0;
+
+    quad_weight[0] = 256.0 / 525.0;
+    quad_weight[1] = (124.0 + 7.0 * sqrt(15.0)) / 350.0; //EDIT
+    quad_weight[2] = (124.0 + 7.0 * sqrt(15.0)) / 350.0;
+    quad_weight[3] = (124.0 - 7.0 * sqrt(15.0)) / 350.0;
+    quad_weight[4] = (124.0 - 7.0 * sqrt(15.0)) / 350.0;
+    quad_weight[5] = 1.0 / 21.0;
+    quad_weight[6] = 1.0 / 21.0;
+    // quad_points[0] = 0.0000000000000000;
+    // quad_points[1] = 0.4058451513773972; //EDIT
+    // quad_points[2] = -0.4058451513773972;
+    // quad_points[3] = -0.7415311855993945;
+    // quad_points[4] = 0.7415311855993945;
+    // quad_points[5] = -0.9491079123427585;
+    // quad_points[6] = 0.9491079123427585;
+
+    // quad_weight[0] = 0.4179591836734694;
+    // quad_weight[1] = 0.3818300505051189; //EDIT
+    // quad_weight[2] = 0.3818300505051189; //EDIT
+    // quad_weight[3] = 0.2797053914892766;
+    // quad_weight[4] = 0.2797053914892766;
+    // quad_weight[5] = 0.1294849661688697;
+    // quad_weight[6] = 0.1294849661688697;
+  } else if (basisFunctionOrder == 3) {
+    quadRule = 10; //EDIT - Number of quadrature points along one dimension
+    quad_points.resize(quadRule); quad_weight.resize(quadRule);
+
+    quad_points[0] = -0.1488743389816312108848260011297199846;
+    quad_points[1] = 0.1488743389816312108848260011297199846; //EDIT
+    quad_points[2] = -0.4333953941292471907992659431657841622;
+    quad_points[3] = 0.4333953941292471907992659431657841622;
+    quad_points[4] = -0.6794095682990244062343273651148735758;
+    quad_points[5] = 0.6794095682990244062343273651148735758;
+    quad_points[6] = -0.8650633666889845107320966884234930485;
+    quad_points[7] = 0.8650633666889845107320966884234930485;
+    quad_points[8] = -0.9739065285171717200779640120844520534;
+    quad_points[9] = 0.9739065285171717200779640120844520534;
+
+
+    quad_weight[0] = 0.295524224714752870173892994651338329;
+    quad_weight[1] = 0.295524224714752870173892994651338329; //EDIT
+    quad_weight[2] = 0.269266719309996355091226921569469352;
+    quad_weight[3] = 0.269266719309996355091226921569469352;
+    quad_weight[4] = 0.219086362515982043995534934228163192;
+    quad_weight[5] = 0.219086362515982043995534934228163192;
+    quad_weight[6] = 0.149451349150580593145776339657697332;
+    quad_weight[7] = 0.149451349150580593145776339657697332;
+    quad_weight[8] = 0.066671344308688137593568809893331792;
+    quad_weight[9] = 0.066671344308688137593568809893331792;
   }
 
-  //Just some notes...
+
+// for (int i = 0; i < quad_points.size(); i++) {
+//    printf( "quad_points[%d] = %.10f, quad_weight[%d] = %.10f\n", i, quad_points[i], i, quad_weight[i]);
+// }
+
+//Just some notes...
   std::cout << "   Number of active elems:       " << triangulation.n_active_cells() << std::endl;
   std::cout << "   Number of degrees of freedom: " << dof_handler.n_dofs() << std::endl;
 }
@@ -412,17 +505,24 @@ void FEM<dim>::assemble_system() {
     // cout << "h_e:" << h_e << endl;
     //Loop over local DOFs and quadrature points to populate Flocal and Klocal.
     Flocal = 0.;
+
+    for (int i = 0; i < dofs_per_elem; i++) {
+      Flocal[i] = 0;
+    }
+
     for (unsigned int A = 0; A < dofs_per_elem; A++) {
       for (unsigned int q = 0; q < quadRule; q++) {
         x = 0;
         //Interpolate the x-coordinates at the nodes to find the x-coordinate at the quad pt. Yiduo: Calculate x
         for (unsigned int B = 0; B < dofs_per_elem; B++) {
           x += nodeLocation[local_dof_indices[B]] * basis_function(B, quad_points[q]);
+
         }
         //EDIT - Define Flocal.
-        Flocal[A] += Area * h_e * (body_f * x) * basis_function(A, quad_points[q]) * quad_weight[q] / 2;
+        // cout << "x:" << x <<endl;
+        Flocal[A] += Area * h_e * (f * x) * basis_function(A, quad_points[q]) * quad_weight[q] / 2;
       }
-      // printf("Flocal[%d] = %.10f\n", A, Flocal[A]);
+      //printf("Flocal[%d] = %.10f\n", A, 2*Flocal[A]/(f*h_e*nodeLocation[A_global]));
     }
     //Add nonzero Neumann condition, if applicable
     if (prob == 2) {
@@ -431,14 +531,20 @@ void FEM<dim>::assemble_system() {
 
 
         double t = h2;
-        Flocal[dofs_per_elem - 1] += t;
+        Flocal[1] += t;
         // printf("Flocal[%d] = %.10f\n", dofs_per_elem - 1, Flocal[dofs_per_elem - 1]);
       }
     }
 
     //Loop over local DOFs and quadrature points to populate Klocal
 
-    Klocal = 0;
+    for (int i = 0; i < dofs_per_elem; i++) {
+      for (int j = 0; j < dofs_per_elem; j++)
+        Klocal[i][j] = 0;
+    }
+
+
+
     for (unsigned int A = 0; A < dofs_per_elem; A++) {
       for (unsigned int B = 0; B < dofs_per_elem; B++) {
         for (unsigned int q = 0; q < quadRule; q++) {
@@ -459,7 +565,7 @@ void FEM<dim>::assemble_system() {
       corresponding to element node number A*/
       unsigned int A_global = local_dof_indices[A];
       F[A_global] += Flocal[A];
-      //printf("Global[%d] = %lf\n", A_global, 2*F[A_global]/(f*h_e));
+      //  printf("Global[%d] = %.10f\n", A_global, 2*F[A_global]/(f*h_e*nodeLocation[A_global]));
       for (unsigned int B = 0; B < dofs_per_elem; B++) {
         //EDIT - add component A,B of Klocal to the correct location in K (using local_dof_indices)
         /*Note: K is a sparse matrix, so you need to use the function "add".
@@ -542,10 +648,10 @@ double FEM<dim>::l2norm_of_error() {
 
   double l2norm = 0.0;
 
-  //double xi_end = analytical_solution_for_problem(L);
-  //double xi_begin = analytical_solution_for_problem(0);
-//  cout << "analytical_solution_for_problem : " << xi_begin << endl;
-//  cout << "analytical_solution_for_problem : " << xi_end << endl;
+  // double xi_end = analytical_solution_for_problem(L);
+  // double xi_begin = analytical_solution_for_problem(0);
+  // cout << "analytical_solution_for_problem : " << xi_begin << endl;
+  // cout << "analytical_solution_for_problem : " << xi_end << endl;
   //Find the l2 norm of the error between the finite element sol'n and the exact sol'n
   const unsigned int        dofs_per_elem = fe.dofs_per_cell; //This gives you dofs per element
   std::vector<unsigned int> local_dof_indices (dofs_per_elem);
@@ -553,10 +659,11 @@ double FEM<dim>::l2norm_of_error() {
 
   //loop over elements
 
-//  for (int i = 0; i < D.size(); i++) {
-// //   printf("D[%d] = %.10f anyltical[%lf] = %.10f, difference = %.20f\n", i, (float)D[i], i * 0.01, (float)analytical_solution_for_problem(i * 0.01), (D[i] - analytical_solution_for_problem(i * 0.01)) );
-//    cout << (D[i] - analytical_solution_for_problem(i * 0.01)) << endl;
-//  }
+//   for (int i = 0; i < D.size(); i++) {
+//     // printf("D[%d] = %.10f anyltical[%lf] = %.10f, difference = %.10f\n", i,
+//            // D[i], nodeLocation[i] , analytical_solution_for_problem(nodeLocation[i]), (D[i] - analytical_solution_for_problem(nodeLocation[i])));
+// //   cout << (D[i] - analytical_solution_for_problem(i * 0.01)) << endl;
+//   }
 //  cout << "numberical : " << D[0] << endl;
 // cout << "numberical : " << D[D.size()-1] << endl;
 
@@ -588,13 +695,13 @@ double FEM<dim>::l2norm_of_error() {
       /*This includes evaluating the exact solution at the quadrature points*/
       u_exact = analytical_solution_for_problem(x);
 
-      printf("x = %.16f, u_exact = %.16f, u_h = %.16f, diff = %.16f\n", x, u_exact, u_h, u_exact - u_h);
+      // printf("x = %.25f, u_exact = %.25f, u_h = %.25f, diff = %.25f\n", x, u_exact, u_h, abs(u_exact - u_h));
 
-      l2norm += (u_exact - u_h) * (u_exact - u_h) * h_e * quad_weight[q] / 2;
+      l2norm += (u_exact - u_h) * (u_exact - u_h) * h_e * quad_weight[q] / 2.0;
 
 
     }
   }
-//  cout << "l2norm: " << sqrt(l2norm) << "sqaure:" << l2norm << endl;
+  cout << "l2norm: " << sqrt(l2norm) << "sqaure:" << l2norm << endl;
   return sqrt(l2norm);
 }
